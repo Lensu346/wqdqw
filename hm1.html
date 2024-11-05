@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamster Kombat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #292C2F;
+            text-align: center;
+            color: white;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        h1 {
+            color: #FFD700;
+            text-transform: uppercase;
+            font-size: 2.5rem;
+            margin: 20px 0;
+            animation: fadeIn 1s;
+        }
+        #hamster {
+            width: 80%;
+            max-width: 150px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            animation: bounce 1s infinite;
+        }
+        .button, .tab, .reward-section {
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #ff6f61;
+            color: white;
+            margin: 10px;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+        .button:hover, .tab:hover, .reward-section:hover {
+            background-color: #ff4f41;
+        }
+        .daily-reward, .level-system, .bonus-streak {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Hamster Kombat</h1>
+<div class="daily-reward" id="dailyReward">Ежедневная награда: <button onclick="claimDailyReward()">Получить</button></div>
+<div class="reward-section" id="chestReward">Сундук с призами: <button onclick="openChest()">Открыть</button> <span id="chestTimer">10:00</span></div>
+<div class="level-system">Уровень: <span id="level">1</span> | Опыт: <span id="xp">0</span>/100</div>
+<div>💸 Прибыль за тап: <span id="tapProfit">1</span> монета</div>
+<div>⏳ Прибыль в час: <span id="hourlyProfit">0</span> монет</div>
+<div>💰 Монеты: <span id="score">0</span></div>
+<div>⚡ Энергия: <span id="energy">1000</span></div>
+<img id="hamster" src="https://krüptovaluuta.ee/wp-content/uploads/2024/05/hamster.png" alt="Hamster">
+<div class="bonus-streak">🔥 Бонус серии кликов: <span id="streakBonus">0</span></div>
+
+<script>
+    let score = parseInt(localStorage.getItem('score')) || 0;
+    let energy = parseInt(localStorage.getItem('energy')) || 1000;
+    let tapProfit = parseInt(localStorage.getItem('tapProfit')) || 1;
+    let hourlyProfit = parseInt(localStorage.getItem('hourlyProfit')) || 10;
+    let xp = parseInt(localStorage.getItem('xp')) || 0;
+    let level = parseInt(localStorage.getItem('level')) || 1;
+    let lastDailyReward = localStorage.getItem('lastDailyReward') || null;
+    let streakBonus = 0;
+    let streakCount = 0;
+    let chestOpenTime = 600; // 10 минут в секундах
+    let chestTimer = chestOpenTime;
+
+    const scoreDisplay = document.getElementById('score');
+    const energyDisplay = document.getElementById('energy');
+    const tapProfitDisplay = document.getElementById('tapProfit');
+    const hourlyProfitDisplay = document.getElementById('hourlyProfit');
+    const xpDisplay = document.getElementById('xp');
+    const levelDisplay = document.getElementById('level');
+    const streakBonusDisplay = document.getElementById('streakBonus');
+    const chestTimerDisplay = document.getElementById('chestTimer');
+
+    function updateDisplays() {
+        scoreDisplay.textContent = score;
+        energyDisplay.textContent = energy;
+        tapProfitDisplay.textContent = tapProfit;
+        hourlyProfitDisplay.textContent = hourlyProfit;
+        xpDisplay.textContent = xp;
+        levelDisplay.textContent = level;
+        streakBonusDisplay.textContent = streakBonus;
+        chestTimerDisplay.textContent = formatTime(chestTimer);
+    }
+
+    // Получение ежедневной награды
+    function claimDailyReward() {
+        const today = new Date().toDateString();
+        if (lastDailyReward !== today) {
+            score += 50;
+            energy += 10;
+            lastDailyReward = today;
+            localStorage.setItem('lastDailyReward', lastDailyReward);
+            updateDisplays();
+            alert("Ежедневная награда получена!");
+        } else {
+            alert("Вы уже получили награду сегодня!");
+        }
+    }
+
+    // Открытие сундука
+    function openChest() {
+        if (chestTimer <= 0) {
+            score += 100;
+            energy += 20;
+            chestTimer = chestOpenTime;
+            alert("Вы открыли сундук и получили призы!");
+            updateDisplays();
+        } else {
+            alert("Сундук пока закрыт! Подождите.");
+        }
+    }
+
+    // Таймер для сундука
+    setInterval(() => {
+        if (chestTimer > 0) {
+            chestTimer--;
+            chestTimerDisplay.textContent = formatTime(chestTimer);
+        }
+    }, 1000);
+
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    // Система уровней
+    function gainXP(amount) {
+        xp += amount;
+        if (xp >= 100) {
+            level++;
+            xp = 0;
+            alert(`Поздравляем! Вы достигли уровня ${level}!`);
+        }
+        localStorage.setItem('xp', xp);
+        localStorage.setItem('level', level);
+        updateDisplays();
+    }
+
+    // Бонус за серию кликов
+    function applyStreakBonus() {
+        streakCount++;
+        if (streakCount >= 10) {
+            streakBonus += 1;
+            score += streakBonus;
+            streakCount = 0;
+            alert(`Бонус серии кликов! Вы получили +${streakBonus} монет.`);
+            updateDisplays();
+        }
+    }
+
+    document.getElementById('hamster').addEventListener('click', () => {
+        if (energy > 0) {
+            score += tapProfit;
+            energy--;
+            applyStreakBonus();
+            gainXP(1);
+            localStorage.setItem('score', score);
+            localStorage.setItem('energy', energy);
+            updateDisplays();
+        } else {
+            alert("Недостаточно энергии!");
+        }
+    });
+
+    updateDisplays();
+</script>
+
+</body>
+</html>
